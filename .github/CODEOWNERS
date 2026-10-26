@@ -1,0 +1,28 @@
+# A (Leader)
+/.github/            @phulongtran
+/.githooks/          @phulongtran
+/package.json        @phulongtran
+/src/App.jsx         @phulongtran
+/src/api/axiosClient.js @phulongtran
+/src/api/authApi.js  @phulongtran
+/src/hooks/          @phulongtran
+/src/contexts/AuthContext.jsx @phulongtran
+
+# TODO: thay @USERNAME_B / @USERNAME_C bang GitHub username that cua B va C
+# B (Catalog)
+/src/utils/          @USERNAME_B
+/src/components/laptop/ @USERNAME_B
+/src/api/laptopApi.js @USERNAME_B
+/src/api/catalogApi.js @USERNAME_B
+/src/api/reviewApi.js @USERNAME_B
+/README.md           @USERNAME_B
+
+# C (Commerce)
+/db.json             @USERNAME_C
+/db.backup.json      @USERNAME_C
+/scripts/            @USERNAME_C
+/src/api/cartApi.js  @USERNAME_C
+/src/api/orderApi.js @USERNAME_C
+/src/contexts/CartContext.jsx @USERNAME_C
+/src/contexts/ToastContext.jsx @USERNAME_C
+/docs/TEST_REPORT.md @USERNAME_C

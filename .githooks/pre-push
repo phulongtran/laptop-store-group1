@@ -1,0 +1,27 @@
+#!/bin/sh
+# Kiem tra quy tac TECH-01, TECH-02, TECH-05 va build truoc khi push.
+# Bat hook: git config core.hooksPath .githooks
+fail=0
+[ -d src ] || exit 0
+
+report() { echo "[pre-push] $1"; echo "$2" | sed 's/^/    /'; fail=1; }
+
+# TECH-01: chi src/api import axios; khong hard-code URL json-server
+out=$(grep -rnE "from ['\"]axios['\"]|require\(['\"]axios['\"]\)" src --include=*.js --include=*.jsx | grep -v '^src/api/')
+[ -n "$out" ] && report "TECH-01: chi src/api duoc import axios" "$out"
+out=$(grep -rn "localhost:3001" src --include=*.js --include=*.jsx | grep -v '^src/api/')
+[ -n "$out" ] && report "TECH-01: khong dung http://localhost:3001 ngoai src/api" "$out"
+
+# TECH-02: khong .then(), khong useEffect(async
+out=$(grep -rnE "\.then\(|useEffect\(\s*async" src --include=*.js --include=*.jsx)
+[ -n "$out" ] && report "TECH-02: khong dung .then() / useEffect(async ...)" "$out"
+
+# TECH-05: khong alert() / window.confirm()
+out=$(grep -rnE "(^|[^.A-Za-z_])alert\(|window\.confirm\(|[^.A-Za-z_]confirm\(" src --include=*.js --include=*.jsx)
+[ -n "$out" ] && report "TECH-05: dung Toast/ConfirmModal thay cho alert/confirm" "$out"
+
+[ $fail -ne 0 ] && { echo "[pre-push] Co vi pham quy tac, push bi chan."; exit 1; }
+
+echo "[pre-push] npm run build ..."
+npm run build >/dev/null 2>&1 || { echo "[pre-push] npm run build that bai."; exit 1; }
+exit 0
