@@ -1,3 +1,6 @@
+/**
+ * Hiển thị trạng thái rỗng khi danh sách không có dữ liệu phù hợp.
+ */
 export default function EmptyState({ icon = '🔍', message = 'Không tìm thấy laptop phù hợp', children }) {
   return (
     <div className="text-center py-5 text-secondary">
