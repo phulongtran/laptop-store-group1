@@ -20,6 +20,7 @@ export default function AppPagination({ page, totalPages, onChange, maxButtons =
     <Pagination className="justify-content-center mt-4 flex-wrap">
       <Pagination.First disabled={page === 1} onClick={() => go(1)} />
       <Pagination.Prev disabled={page === 1} onClick={() => go(page - 1)} />
+
       {start > 1 && <Pagination.Ellipsis disabled />}
       {pages.map((p) => (
         <Pagination.Item key={p} active={p === page} onClick={() => go(p)}>
@@ -27,6 +28,7 @@ export default function AppPagination({ page, totalPages, onChange, maxButtons =
         </Pagination.Item>
       ))}
       {end < totalPages && <Pagination.Ellipsis disabled />}
+
       <Pagination.Next disabled={page === totalPages} onClick={() => go(page + 1)} />
       <Pagination.Last disabled={page === totalPages} onClick={() => go(totalPages)} />
     </Pagination>
