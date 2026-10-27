@@ -1,5 +1,8 @@
 import axiosClient from './axiosClient';
 
+/**
+ * Service API quản lý dữ liệu laptops, tìm kiếm, lọc và phân trang.
+ */
 export const PAGE_SIZE = 8;
 
 /** Giá trị `sort` trên URL → `_sort`, `_order` của json-server (F3) */
