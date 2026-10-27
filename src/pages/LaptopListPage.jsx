@@ -1,8 +1,10 @@
-import { Col, Form, Row } from 'react-bootstrap';
+import { useEffect, useState } from 'react';
+import { Col, Form, InputGroup, Row } from 'react-bootstrap';
 import { useSearchParams } from 'react-router-dom';
 import laptopApi, { buildLaptopParams, PAGE_SIZE, SORT_OPTIONS } from '../api/laptopApi';
 import catalogApi from '../api/catalogApi';
 import useAxios from '../hooks/useAxios';
+import useDebounce from '../hooks/useDebounce';
 import usePageTitle from '../hooks/usePageTitle';
 import LaptopFilter from '../components/laptop/LaptopFilter';
 import LaptopGrid from '../components/laptop/LaptopGrid';
@@ -42,6 +44,29 @@ export default function LaptopListPage() {
 
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
 
+  const [keyword, setKeyword] = useState(filters.q);
+  const debouncedKeyword = useDebounce(keyword.trim(), 500);
+
+  useEffect(() => {
+    setKeyword(filters.q);
+  }, [filters.q]);
+
+  useEffect(() => {
+    if (debouncedKeyword !== filters.q) updateParams({ q: debouncedKeyword });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedKeyword]);
+
+  const filterProps = {
+    brands: catalog.data?.brands,
+    categories: catalog.data?.categories,
+    filters,
+    onChange: (patch) => updateParams(patch),
+    onReset: () => {
+      setKeyword('');
+      setSearchParams({});
+    },
+  };
+
   return (
     <>
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -52,32 +77,38 @@ export default function LaptopListPage() {
       <Row>
         <Col lg={3}>
           <div className="bg-body-tertiary rounded p-3 sticky-lg-top filter-sticky">
-            <LaptopFilter
-              brands={catalog.data?.brands}
-              categories={catalog.data?.categories}
-              filters={filters}
-              onChange={(patch) => updateParams(patch)}
-              onReset={() => setSearchParams({})}
-              idPrefix="side"
-            />
+            <LaptopFilter {...filterProps} idPrefix="side" />
           </div>
         </Col>
 
         <Col lg={9}>
-          <div className="d-flex justify-content-end mb-3">
-            <Form.Select
-              aria-label="Sắp xếp"
-              value={sort}
-              style={{ width: 'auto' }}
-              onChange={(e) => updateParams({ sort: e.target.value === 'newest' ? '' : e.target.value })}
-            >
-              {Object.entries(SORT_OPTIONS).map(([value, option]) => (
-                <option key={value} value={value}>
-                  {option.label}
-                </option>
-              ))}
-            </Form.Select>
-          </div>
+          <Row className="g-2 mb-3">
+            <Col xs={12} md>
+              <InputGroup>
+                <InputGroup.Text>🔍</InputGroup.Text>
+                <Form.Control
+                  type="search"
+                  placeholder="Tìm theo tên, CPU, card đồ họa..."
+                  aria-label="Tìm trong danh sách"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
+              </InputGroup>
+            </Col>
+            <Col xs={6} md="auto">
+              <Form.Select
+                aria-label="Sắp xếp"
+                value={sort}
+                onChange={(e) => updateParams({ sort: e.target.value === 'newest' ? '' : e.target.value })}
+              >
+                {Object.entries(SORT_OPTIONS).map(([value, option]) => (
+                  <option key={value} value={value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Form.Select>
+            </Col>
+          </Row>
 
           {error ? (
             <ErrorAlert message={error} onRetry={refetch} />
