@@ -1,6 +1,8 @@
 import { Button, Modal, Spinner } from 'react-bootstrap';
 
-/** Modal xác nhận dùng chung (TECH-05) */
+/**
+ * Modal xác nhận dùng chung (TECH-05 – thay thế window.confirm).
+ */
 export default function ConfirmModal({
   show,
   title = 'Xác nhận',
