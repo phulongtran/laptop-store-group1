@@ -1,7 +1,9 @@
-import { Button, Carousel } from 'react-bootstrap';
+import { useEffect, useState } from 'react';
+import { Badge, Button, Carousel } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import laptopApi from '../api/laptopApi';
 import catalogApi from '../api/catalogApi';
+import { isCancel } from '../api/axiosClient';
 import useAxios from '../hooks/useAxios';
 import usePageTitle from '../hooks/usePageTitle';
 import LaptopGrid from '../components/laptop/LaptopGrid';
@@ -28,6 +30,16 @@ async function loadParallel(signal) {
   };
 }
 
+/** C2. Cùng 4 request nhưng gọi TUẦN TỰ (4 dòng await) – chỉ để so sánh thời gian */
+async function loadSequential(signal) {
+  const start = performance.now();
+  await laptopApi.getAll(NEWEST_PARAMS, signal);
+  await laptopApi.getAll(BESTSELLER_PARAMS, signal);
+  await catalogApi.getBrands(signal);
+  await catalogApi.getCategories(signal);
+  return Math.round(performance.now() - start);
+}
+
 const BANNERS = [
   {
     title: 'Laptop Gaming – Chiến mọi tựa game',
@@ -52,6 +64,23 @@ const BANNERS = [
 export default function HomePage() {
   usePageTitle('Trang chủ');
   const { data, loading, error, refetch } = useAxios(loadParallel, []);
+  const [sequentialMs, setSequentialMs] = useState(null);
+
+  // Chỉ ở DEV: sau khi tải song song xong, đo thêm cách gọi tuần tự để so sánh
+  useEffect(() => {
+    if (!import.meta.env.DEV || !data) return undefined;
+    const controller = new AbortController();
+    const measure = async () => {
+      try {
+        const ms = await loadSequential(controller.signal);
+        setSequentialMs(ms);
+      } catch (err) {
+        if (!isCancel(err)) setSequentialMs(null);
+      }
+    };
+    measure();
+    return () => controller.abort();
+  }, [data]);
 
   return (
     <>
@@ -70,6 +99,14 @@ export default function HomePage() {
           </Carousel.Item>
         ))}
       </Carousel>
+
+      {import.meta.env.DEV && data && (
+        <div className="mb-3 text-end">
+          <Badge bg="dark" className="fw-normal">
+            Tuần tự: {sequentialMs ?? '...'}ms | Song song: {data.parallelMs}ms
+          </Badge>
+        </div>
+      )}
 
       {error && <ErrorAlert message={error} onRetry={refetch} />}
 
