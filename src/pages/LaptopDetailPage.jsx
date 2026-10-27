@@ -8,7 +8,6 @@ import {
   Form,
   Image,
   InputGroup,
-  ListGroup,
   Row,
   Spinner,
   Tab,
@@ -22,13 +21,16 @@ import { getErrorMessage } from '../api/axiosClient';
 import useAxios from '../hooks/useAxios';
 import useAddToCart from '../hooks/useAddToCart';
 import usePageTitle from '../hooks/usePageTitle';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import Price from '../components/common/Price';
 import StarRating from '../components/common/StarRating';
 import Loading from '../components/common/Loading';
 import ErrorAlert from '../components/common/ErrorAlert';
 import LaptopGrid from '../components/laptop/LaptopGrid';
+import ReviewList from '../components/laptop/ReviewList';
+import ReviewForm from '../components/laptop/ReviewForm';
 import NotFoundPage from './NotFoundPage';
-import { formatDate } from '../utils/format';
 import { handleImageError } from '../utils/image';
 
 /**
@@ -66,12 +68,49 @@ export default function LaptopDetailPage() {
 
 function LaptopDetail({ id }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { showToast } = useToast();
   const { add, adding } = useAddToCart();
   const [quantity, setQuantity] = useState(1);
-  const { data, loading, error, refetch } = useAxios((signal) => loadDetail(id, signal), [id]);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const { data, loading, error, refetch, setData } = useAxios((signal) => loadDetail(id, signal), [id]);
 
   const laptop = data?.laptop;
   usePageTitle(laptop?.name ?? 'Chi tiết laptop');
+
+  /** G2 + BR-07. Gửi đánh giá – mỗi user chỉ đánh giá 1 lần / 1 laptop */
+  const handleReview = async ({ rating, comment }) => {
+    setSubmittingReview(true);
+    try {
+      const existing = await reviewApi.findByUser(laptop.id, user.id);
+      if (existing) {
+        showToast('Bạn đã đánh giá sản phẩm này rồi', 'warning');
+        return false;
+      }
+      const review = await reviewApi.create({
+        laptopId: laptop.id,
+        userId: user.id,
+        userName: user.fullName,
+        rating,
+        comment,
+        createdAt: new Date().toISOString(),
+      });
+      // Cập nhật điểm trung bình của laptop (PATCH 1 trường)
+      const reviews = [review, ...data.reviews];
+      const avg = Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10;
+      await laptopApi.patch(laptop.id, { rating: avg });
+
+      // Thêm vào ĐẦU danh sách bằng setData – không cần tải lại trang
+      setData((prev) => ({ ...prev, reviews, laptop: { ...prev.laptop, rating: avg } }));
+      showToast('Cảm ơn bạn đã đánh giá!');
+      return true;
+    } catch (err) {
+      showToast(getErrorMessage(err), 'danger');
+      return false;
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   if (loading) return <Loading text="Đang tải thông tin laptop..." />;
   if (error)
@@ -85,6 +124,7 @@ function LaptopDetail({ id }) {
     );
 
   const outOfStock = laptop.stock <= 0;
+  const alreadyReviewed = user && data.reviews.some((r) => r.userId === user.id);
 
   return (
     <>
@@ -178,16 +218,22 @@ function LaptopDetail({ id }) {
           {data.reviewsError ? (
             <Alert variant="warning">Không tải được đánh giá. {data.reviewsError}</Alert>
           ) : (
-            <ListGroup variant="flush">
-              {data.reviews.map((review) => (
-                <ListGroup.Item key={review.id} className="px-0">
-                  <strong>{review.userName ?? 'Khách hàng'}</strong>{' '}
-                  <small className="text-secondary">{formatDate(review.createdAt)}</small>
-                  <div><StarRating value={review.rating} showValue={false} /></div>
-                  <p className="mb-0">{review.comment}</p>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
+            <>
+              {!user && (
+                <Alert variant="light" className="border">
+                  <Link to="/login" state={{ from: { pathname: `/laptops/${laptop.id}` } }}>
+                    Đăng nhập
+                  </Link>{' '}
+                  để viết đánh giá.
+                </Alert>
+              )}
+
+              {user && !alreadyReviewed && <ReviewForm onSubmit={handleReview} submitting={submittingReview} />}
+
+              {alreadyReviewed && <Alert variant="success">Bạn đã đánh giá sản phẩm này.</Alert>}
+
+              <ReviewList reviews={data.reviews} />
+            </>
           )}
         </Tab>
       </Tabs>
