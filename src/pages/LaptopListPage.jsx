@@ -1,6 +1,6 @@
-import { Col, Row } from 'react-bootstrap';
+import { Col, Form, Row } from 'react-bootstrap';
 import { useSearchParams } from 'react-router-dom';
-import laptopApi, { buildLaptopParams, PAGE_SIZE } from '../api/laptopApi';
+import laptopApi, { buildLaptopParams, PAGE_SIZE, SORT_OPTIONS } from '../api/laptopApi';
 import catalogApi from '../api/catalogApi';
 import useAxios from '../hooks/useAxios';
 import usePageTitle from '../hooks/usePageTitle';
@@ -17,6 +17,7 @@ export default function LaptopListPage() {
 
   const filters = Object.fromEntries(FILTER_KEYS.map((key) => [key, searchParams.get(key) ?? '']));
   const page = Number(filters.page) || 1;
+  const sort = SORT_OPTIONS[filters.sort] ? filters.sort : 'newest';
 
   const updateParams = (patch, { resetPage = true } = {}) => {
     const next = new URLSearchParams(searchParams);
@@ -35,7 +36,7 @@ export default function LaptopListPage() {
 
   const queryString = searchParams.toString();
   const { data, loading, error, refetch } = useAxios(
-    (signal) => laptopApi.getAll(buildLaptopParams(filters), signal),
+    (signal) => laptopApi.getAll(buildLaptopParams({ ...filters, sort }), signal),
     [queryString]
   );
 
@@ -63,6 +64,21 @@ export default function LaptopListPage() {
         </Col>
 
         <Col lg={9}>
+          <div className="d-flex justify-content-end mb-3">
+            <Form.Select
+              aria-label="Sắp xếp"
+              value={sort}
+              style={{ width: 'auto' }}
+              onChange={(e) => updateParams({ sort: e.target.value === 'newest' ? '' : e.target.value })}
+            >
+              {Object.entries(SORT_OPTIONS).map(([value, option]) => (
+                <option key={value} value={value}>
+                  {option.label}
+                </option>
+              ))}
+            </Form.Select>
+          </div>
+
           {error ? (
             <ErrorAlert message={error} onRetry={refetch} />
           ) : (
