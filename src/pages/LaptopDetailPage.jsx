@@ -1,5 +1,20 @@
 import { useState } from 'react';
-import { Alert, Badge, Breadcrumb, Button, Col, Form, Image, InputGroup, ListGroup, Row, Spinner, Tab, Table, Tabs } from 'react-bootstrap';
+import {
+  Alert,
+  Badge,
+  Breadcrumb,
+  Button,
+  Col,
+  Form,
+  Image,
+  InputGroup,
+  ListGroup,
+  Row,
+  Spinner,
+  Tab,
+  Table,
+  Tabs,
+} from 'react-bootstrap';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import laptopApi from '../api/laptopApi';
 import reviewApi from '../api/reviewApi';
@@ -16,6 +31,12 @@ import NotFoundPage from './NotFoundPage';
 import { formatDate } from '../utils/format';
 import { handleImageError } from '../utils/image';
 
+/**
+ * C3 + D2. Tải trang chi tiết
+ * Bước 1: GET laptop (bắt buộc) – lỗi thì cả trang báo lỗi
+ * Bước 2: Promise.allSettled [đánh giá, laptop liên quan] – phần nào lỗi chỉ ảnh hưởng phần đó
+ * Cả 2 bước dùng CHUNG một signal → đổi id là hủy hết request của laptop cũ
+ */
 async function loadDetail(id, signal) {
   const laptop = await laptopApi.getById(id, signal);
   const [reviewsResult, relatedResult] = await Promise.allSettled([
@@ -36,8 +57,10 @@ const storageLabel = (gb) => (gb >= 1024 ? `${gb / 1024} TB` : `${gb} GB`);
 export default function LaptopDetailPage() {
   const { id } = useParams();
 
+  // F7. /laptops/abc (id không phải số) → trang 404, không gọi API
   if (!/^\d+$/.test(id)) return <NotFoundPage />;
 
+  // key={id}: đổi laptop → component mới, state (số lượng...) về mặc định
   return <LaptopDetail key={id} id={id} />;
 }
 
