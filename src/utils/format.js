@@ -24,13 +24,6 @@ export const formatDateTime = (value) => {
   });
 };
 
-/** BR-03: có giảm giá hợp lệ khi 0 < salePrice < price */
-export const hasSale = (laptop) =>
-  Boolean(laptop?.salePrice) && laptop.salePrice > 0 && laptop.salePrice < laptop.price;
-
-/** BR-03: giá bán thực tế = salePrice nếu có, ngược lại price */
-export const getSellingPrice = (laptop) => (hasSale(laptop) ? laptop.salePrice : laptop?.price ?? 0);
-
-/** BR-03: % giảm, làm tròn. 42.990.000 → 39.990.000 = 7 */
-export const getDiscountPercent = (laptop) =>
-  hasSale(laptop) ? Math.round(((laptop.price - laptop.salePrice) / laptop.price) * 100) : 0;
+export const hasSale = (laptop) => Boolean(laptop?.salePrice);
+export const getSellingPrice = (laptop) => laptop?.salePrice ?? laptop?.price ?? 0;
+export const getDiscountPercent = () => 0;
